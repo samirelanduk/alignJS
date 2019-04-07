@@ -1,7 +1,7 @@
 function align() {
   var sequences = getSequences();
   if (sequences.length) {
-    console.log(sequences);
+    displaySequences(sequences);
   }
 }
 
@@ -23,4 +23,9 @@ function getSequences() {
     }
   }
   return sequences.length == 2 ? sequences : [];
+}
+
+function displaySequences(sequences) {
+  document.getElementsByClassName("sequence1")[0].innerHTML = sequences[0];
+  document.getElementsByClassName("sequence2")[0].innerHTML = sequences[1];
 }
