@@ -36,3 +36,7 @@ button {
   padding: 10px;
   cursor: pointer;
 }
+
+td.match {
+  background-color: black;
+}

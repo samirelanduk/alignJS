@@ -2,6 +2,7 @@ function align() {
   var sequences = getSequences();
   if (sequences.length) {
     displaySequences(sequences);
+    createDotMatrix(sequences);
   }
 }
 
@@ -28,4 +29,24 @@ function getSequences() {
 function displaySequences(sequences) {
   document.getElementsByClassName("sequence1")[0].innerHTML = sequences[0];
   document.getElementsByClassName("sequence2")[0].innerHTML = sequences[1];
+}
+
+function createDotMatrix(sequences) {
+  var matrix = document.createElement("TABLE");
+  for (var r = 0; r <= sequences[1].length; r ++) {
+    matrix.insertRow();
+    for (var c = 0; c <= sequences[0].length; c++) {
+      matrix.rows[r].insertCell();
+      if (r == 0 && c > 0) {
+        matrix.rows[r].cells[c].innerHTML = sequences[0][c - 1];
+      } else if (c == 0 && r != 0) {
+        matrix.rows[r].cells[c].innerHTML = sequences[1][r - 1];
+      } else if (r + c > 0 && sequences[0][c - 1] == sequences[1][r - 1]) {
+        matrix.rows[r].cells[c].classList.add("match");
+      }
+    }
+
+  }
+
+  document.body.appendChild(matrix);
 }
