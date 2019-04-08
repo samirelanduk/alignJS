@@ -16,20 +16,23 @@
 
 <h1>Sequence Alignment</h1>
 
-<div class="inputs">
-  <div class="sequence1-input">
-    <label>Sequence 1</label>
-    <textarea id="id_sequence1"></textarea>
-  </div>
+<form>
+  <div class="inputs">
+    <div class="sequence1-input">
+      <label>Sequence 1</label>
+      <textarea id="id_sequence1" name="sequence1"></textarea>
+    </div>
 
-  <div class="sequence2-input">
-    <label>Sequence 2</label>
-    <textarea id="id_sequence2"></textarea>
+    <div class="sequence2-input">
+      <label>Sequence 2</label>
+      <textarea id="id_sequence2" name="sequence2"></textarea>
+    </div>
   </div>
+  <input value="Align" type="submit"></input>
 </div>
 
 <div class="processing">
-  <button onclick="align();">Align</button>
+
 </div>
 
 <div class="sequences">

@@ -1,35 +1,72 @@
-function align() {
-  var sequences = getSequences();
-  if (sequences.length) {
-    displaySequences(sequences);
-    createDotMatrix(sequences);
+window.onload = function() {
+  // Are there GET parameters?
+  let params = parseGetParameters();
+
+  if (Object.entries(params).length) {
+    // Are the sequences suitable?
+    let sequences = getSequences(params);
+    let error = validateSequences(sequences);
+
+    if (!error) {
+      createDotMatrix(sequences);
+    }
+
   }
+
 }
 
-function getSequences() {
-  /**
-  Tries to extract the two raw sequences from the inputs. If either of them has
-  a problem, the input will be turned red and an empty list will be returned. If
-  neither of them have a problem, the two sequences are returned.
-  */
 
-  var sequences = [];
-  for (var i = 0; i < 2; i++) {
-    var sequence = document.getElementById("id_sequence" + (i + 1));
-    if (!sequence.value) {
-      sequence.classList.add("error");
-    } else {
-      sequence.classList.remove("error");
-      sequences.push(sequence.value);
+function parseGetParameters() {
+  /**
+   * Returns an object representation of any GET parameters sent. If there are
+   * none then an empty object will be returned.
+   */
+
+  let params = window.location.search.substr(1).split("&");
+  let paramsObject = {}
+  if (params.length != 0 && params[0].length != 0) {
+    for (var param of params) {
+      let sections = param.split("=");
+      paramsObject[sections[0]] = sections[1]
     }
   }
-  return sequences.length == 2 ? sequences : [];
+  return paramsObject;
 }
 
-function displaySequences(sequences) {
-  document.getElementsByClassName("sequence1")[0].innerHTML = sequences[0];
-  document.getElementsByClassName("sequence2")[0].innerHTML = sequences[1];
+
+function getSequences(params) {
+  /** Gets the actual sequences from the parameters object, and displays them in
+   * the textareas. The sequences themselves are returned as a list.
+   */
+
+  document.getElementById("id_sequence1").value = params.sequence1;
+  document.getElementById("id_sequence2").value = params.sequence2;
+  return [params.sequence1, params.sequence2]
 }
+
+
+function validateSequences(sequences) {
+  /**
+   * Takes two sequences, and checks they are valid. If they are, they are
+   * written to the page. If not, their input is errored. If any of them are
+   * invalid, false is returned - otherwise true.
+   */
+
+  var error = false;
+  for (var i = 0; i < 2; i++) {
+    let sequence = sequences[i];
+    if (!sequence.length) {
+      document.getElementById("id_sequence" + (i + 1)).classList.add("error");
+      error = true;
+    } else {
+      document.getElementById("id_sequence" + (i + 1)).classList.remove("error");
+      document.getElementsByClassName("sequence" + (i + 1))[0].innerHTML = sequences[i];
+    }
+  }
+  return error;
+}
+
+
 
 function createDotMatrix(sequences) {
   var matrix = document.createElement("TABLE");
@@ -45,8 +82,6 @@ function createDotMatrix(sequences) {
         matrix.rows[r].cells[c].classList.add("match");
       }
     }
-
   }
-
   document.body.appendChild(matrix);
 }

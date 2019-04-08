@@ -23,18 +23,13 @@ textarea.error {
   background-color: red;
 }
 
-.processing {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-}
-
-button {
+input[type=submit] {
   display: block;
   width: fit-content;
-  padding: 10px;
+  margin-left: auto;
+  margin-right: auto;
   cursor: pointer;
+  padding: 5px;
 }
 
 td.match {
