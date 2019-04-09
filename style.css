@@ -32,6 +32,30 @@ input[type=submit] {
   padding: 5px;
 }
 
+table {
+  font-family: monospace;
+  border-collapse: collapse;
+  text-align: center;
+  font-size: 10px;
+  color: #444;
+  box-sizing: border-box;
+  margin: auto;
+}
+
+tr {
+  border: none;
+  height: 10px;
+}
+
+td {
+  width: 10px;
+  overflow: hidden;
+  height: 10px;
+  box-sizing: border-box;
+  line-height: 8px;
+}
+
+
 td.match {
-  background-color: black;
+  background-color: hsl(230, 49%, 41%);
 }
