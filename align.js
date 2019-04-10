@@ -28,7 +28,7 @@ function parseGetParameters() {
   if (params.length != 0 && params[0].length != 0) {
     for (var param of params) {
       let sections = param.split("=");
-      paramsObject[sections[0]] = sections[1]
+      paramsObject[sections[0]] = decodeURIComponent(sections[1].replace(/\+/g, " "));//decodeURI(sections[1].replace(/\+/g, "%20").replace(/\%3D/g, "="));
     }
   }
   return paramsObject;
@@ -40,9 +40,19 @@ function getSequences(params) {
    * the textareas. The sequences themselves are returned as a list.
    */
 
-  document.getElementById("id_sequence1").value = params.sequence1;
-  document.getElementById("id_sequence2").value = params.sequence2;
-  return [params.sequence1, params.sequence2]
+  let sequences = [];
+  for (var n of [1, 2]) {
+    let sequence = params["sequence" + n];
+    document.getElementById("id_sequence" + n).value = sequence;
+    sequence = sequence.replace(/(\r\n|\n|\r)/gm, "\n");
+    let lines = sequence.split("\n");
+    if (lines[0][0] == ">") {
+      lines.shift()
+    }
+    sequence = lines.join("");
+    sequences.push(sequence);
+  }
+  return sequences;
 }
 
 
@@ -71,7 +81,7 @@ function validateSequences(sequences) {
 
 function activateResults() {
   /**
-   * Makes the results section viisble, and scrolls to it.
+   * Makes the results section visible, and scrolls to it.
    */
 
    let results = document.getElementsByClassName("results")[0];
