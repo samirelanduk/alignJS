@@ -8,6 +8,7 @@ window.onload = function() {
     let error = validateSequences(sequences);
 
     if (!error) {
+      activateResults();
       createDotMatrix(sequences);
     }
 
@@ -57,13 +58,26 @@ function validateSequences(sequences) {
     let sequence = sequences[i];
     if (!sequence.length) {
       document.getElementById("id_sequence" + (i + 1)).classList.add("error");
+      document.getElementsByClassName("error-message")[i].innerHTML = "Enter a sequence"
       error = true;
     } else {
       document.getElementById("id_sequence" + (i + 1)).classList.remove("error");
-      document.getElementsByClassName("sequence" + (i + 1))[0].innerHTML = sequences[i];
+      document.getElementsByClassName("sequence" + (i + 1))[0].getElementsByTagName("span")[0].innerHTML = sequences[i];
     }
   }
   return error;
+}
+
+
+function activateResults() {
+  /**
+   * Makes the results section viisble, and scrolls to it.
+   */
+
+   let results = document.getElementsByClassName("results")[0];
+   results.style.display = "block";
+   document.getElementsByClassName("top-section")[0].style.height = "auto";
+   results.scrollIntoView();
 }
 
 
