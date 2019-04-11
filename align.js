@@ -8,12 +8,13 @@ window.onload = function() {
     let error = validateSequences(sequences);
 
     if (!error) {
+      // We're good to go, make the results section visible
       activateResults();
+
+      // Add a dot matrix to the page
       createDotMatrix(sequences);
     }
-
   }
-
 }
 
 
@@ -95,21 +96,64 @@ function activateResults() {
 }
 
 
+function createSequenceMatrix(sequences) {
+  /**
+   * Takes two sequences and creates a JS matrix, where the first row is
+   * sequence 1, the first column is sequence 2, and the body is all zeroes.
+   */
+
+  let matrix = [];
+  matrix.push([""]);
+  for (var char of sequences[0]) {
+    matrix[0].push(char);
+  }
+  for (var char of sequences[1]) {
+    matrix.push([char])
+    for (var _ of sequences[0]) {
+      matrix[matrix.length - 1].push(0);
+    }
+  }
+  return matrix;
+}
+
+
 
 function createDotMatrix(sequences) {
-  var matrix = document.createElement("TABLE");
-  for (var r = 0; r <= sequences[1].length; r ++) {
-    matrix.insertRow();
-    for (var c = 0; c <= sequences[0].length; c++) {
-      matrix.rows[r].insertCell();
-      if (r == 0 && c > 0) {
-        matrix.rows[r].cells[c].innerHTML = sequences[0][c - 1];
-      } else if (c == 0 && r != 0) {
-        matrix.rows[r].cells[c].innerHTML = sequences[1][r - 1];
-      } else if (r + c > 0 && sequences[0][c - 1] == sequences[1][r - 1]) {
-        matrix.rows[r].cells[c].classList.add("match");
+  /**
+   * Adds a HTML dot matrix to the page, from two sequences.
+   */
+
+  let matrix = createSequenceMatrix(sequences);
+  for (var i = 1; i < matrix.length; i++) {
+    for (var j = 1; j < matrix[0].length; j++) {
+      matrix[i][j] = matrix[0][j] == matrix[i][0];
+    }
+  }
+  matrix = createHtmlMatrix(matrix);
+  document.getElementsByClassName("dot-plot")[0].appendChild(matrix);
+}
+
+
+function createHtmlMatrix(matrix) {
+  /**
+   * Takes a JS matrix, and creates a HTML table from it. The cells will be
+   * empty if the contents are a Boolean value, but will have the match class
+   * attached if true.
+   */
+
+  let table = document.createElement("TABLE");
+  for (var row of matrix) {
+    let tableRow = table.insertRow();
+    for (var cell of row) {
+      let tableCell = tableRow.insertCell();
+      if (typeof cell === "boolean") {
+        if (cell) {
+          tableCell.classList.add("match");
+        }
+      } else {
+        tableCell.innerHTML = cell;
       }
     }
   }
-  document.getElementsByClassName("dot-plot")[0].appendChild(matrix);
+  return table;
 }
