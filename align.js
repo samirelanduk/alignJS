@@ -28,7 +28,7 @@ function parseGetParameters() {
   if (params.length != 0 && params[0].length != 0) {
     for (var param of params) {
       let sections = param.split("=");
-      paramsObject[sections[0]] = decodeURIComponent(sections[1].replace(/\+/g, " "));//decodeURI(sections[1].replace(/\+/g, "%20").replace(/\%3D/g, "="));
+      paramsObject[sections[0]] = decodeURIComponent(sections[1].replace(/\+/g, " "));
     }
   }
   return paramsObject;
@@ -70,6 +70,10 @@ function validateSequences(sequences) {
       document.getElementById("id_sequence" + (i + 1)).classList.add("error");
       document.getElementsByClassName("error-message")[i].innerHTML = "Enter a sequence"
       error = true;
+    } else if (sequence.length > 30) {
+      document.getElementById("id_sequence" + (i + 1)).classList.add("error");
+      document.getElementsByClassName("error-message")[i].innerHTML = "Sequence can't be more than 30 characters - this is " + sequence.length;
+      error = true;
     } else {
       document.getElementById("id_sequence" + (i + 1)).classList.remove("error");
       document.getElementsByClassName("sequence" + (i + 1))[0].getElementsByTagName("span")[0].innerHTML = sequences[i];
@@ -107,5 +111,5 @@ function createDotMatrix(sequences) {
       }
     }
   }
-  document.body.appendChild(matrix);
+  document.getElementsByClassName("dot-plot")[0].appendChild(matrix);
 }
