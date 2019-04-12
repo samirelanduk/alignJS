@@ -120,7 +120,7 @@ function createSequenceMatrix(sequences, pad=false) {
       matrix[i].splice(1, 0, i == 0 ? "" : 0);
     }
     matrix.splice(1, 0, ["", 0]);
-    for (var char of sequences[1]) {
+    for (var char of sequences[0]) {
       matrix[1].push(0);
     }
   }
@@ -146,6 +146,11 @@ function createHtmlMatrix(matrix) {
         }
       } else {
         tableCell.innerHTML = cell;
+        if (Number.isInteger(cell)) {
+          let opacity = (parseInt(255 / 30) * Math.abs(cell)).toString(16);
+          let color = cell > 0 ? "#44bd32" : "#e84118";
+          tableCell.style.backgroundColor = color + opacity;
+        }
       }
     }
   }
@@ -172,6 +177,34 @@ function createDotMatrix(sequences) {
 
 function createGlobalAlignmentMatrix(sequences) {
   let matrix = createSequenceMatrix(sequences, pad=true);
+  for (var s = 0; s < sequences[0].length; s++) {
+    matrix[1][s + 2] = -1 - s;
+  }
+  for (var s = 0; s < sequences[1].length; s++) {
+    matrix[s + 2][1] = -1 - s;
+  }
+
+  const INDEL = -1
+  const MISMATCH = -1
+  const MATCH = 1
+
+  for (var i=2; i < matrix.length; i++) {
+    for (var j=2; j < matrix[0].length; j++) {
+      let scores = [];
+      let left = matrix[i][j - 1];
+      let diagonal = matrix[i - 1][j - 1];
+      let top = matrix[i - 1][j];
+      scores.push(diagonal + (matrix[i][0] == matrix[0][j] ? MATCH : MISMATCH));
+      scores.push(top + MISMATCH);
+      scores.push(left + MISMATCH);
+      matrix[i][j] = Math.max.apply(0, scores);
+    }
+  }
+
+
+
+
+
   matrix = createHtmlMatrix(matrix);
   document.getElementsByClassName("global-align")[0].appendChild(matrix);
 }
