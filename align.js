@@ -13,6 +13,8 @@ window.onload = function() {
 
       // Add a dot matrix to the page
       createDotMatrix(sequences);
+
+      createGlobalAlignmentMatrix(sequences);
     }
   }
 }
@@ -96,7 +98,7 @@ function activateResults() {
 }
 
 
-function createSequenceMatrix(sequences) {
+function createSequenceMatrix(sequences, pad=false) {
   /**
    * Takes two sequences and creates a JS matrix, where the first row is
    * sequence 1, the first column is sequence 2, and the body is all zeroes.
@@ -113,24 +115,16 @@ function createSequenceMatrix(sequences) {
       matrix[matrix.length - 1].push(0);
     }
   }
-  return matrix;
-}
-
-
-
-function createDotMatrix(sequences) {
-  /**
-   * Adds a HTML dot matrix to the page, from two sequences.
-   */
-
-  let matrix = createSequenceMatrix(sequences);
-  for (var i = 1; i < matrix.length; i++) {
-    for (var j = 1; j < matrix[0].length; j++) {
-      matrix[i][j] = matrix[0][j] == matrix[i][0];
+  if (pad) {
+    for (var i = 0; i < matrix.length; i++) {
+      matrix[i].splice(1, 0, i == 0 ? "" : 0);
+    }
+    matrix.splice(1, 0, ["", 0]);
+    for (var char of sequences[1]) {
+      matrix[1].push(0);
     }
   }
-  matrix = createHtmlMatrix(matrix);
-  document.getElementsByClassName("dot-plot")[0].appendChild(matrix);
+  return matrix;
 }
 
 
@@ -156,4 +150,28 @@ function createHtmlMatrix(matrix) {
     }
   }
   return table;
+}
+
+
+
+function createDotMatrix(sequences) {
+  /**
+   * Adds a HTML dot matrix to the page, from two sequences.
+   */
+
+  let matrix = createSequenceMatrix(sequences);
+  for (var i = 1; i < matrix.length; i++) {
+    for (var j = 1; j < matrix[0].length; j++) {
+      matrix[i][j] = matrix[0][j] == matrix[i][0];
+    }
+  }
+  matrix = createHtmlMatrix(matrix);
+  document.getElementsByClassName("dot-plot")[0].appendChild(matrix);
+}
+
+
+function createGlobalAlignmentMatrix(sequences) {
+  let matrix = createSequenceMatrix(sequences, pad=true);
+  matrix = createHtmlMatrix(matrix);
+  document.getElementsByClassName("global-align")[0].appendChild(matrix);
 }

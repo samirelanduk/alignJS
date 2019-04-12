@@ -128,3 +128,9 @@ td {
 td.match {
   background-color: hsl(230, 49%, 41%);
 }
+
+.global-align {
+  padding: 60px 50px;
+  background-color: hsl(210, 98%, 98%);
+  line-height: 4;
+}
