@@ -200,11 +200,33 @@ function createGlobalAlignmentMatrix(sequences) {
       matrix[i][j] = Math.max.apply(0, scores);
     }
   }
-
-
-
-
-
+  let alignment = getGlobalAlignment(matrix);
   matrix = createHtmlMatrix(matrix);
+  for (var cell of alignment) {
+    matrix.getElementsByTagName("tr")[cell[0]].getElementsByTagName("td")[cell[1]].style.border="1px solid black"
+  }
   document.getElementsByClassName("global-align")[0].appendChild(matrix);
+}
+
+function getGlobalAlignment(matrix) {
+  let i = matrix.length - 1;
+  let j = matrix[0].length - 1;
+  let cells = [[i, j]];
+  while (i > 1 || j > 1) {
+    let options = [matrix[i - 1][j], matrix[i - 1][j - 1], matrix[i][j - 1]];
+    console.log(options)
+    if (i == 1) {
+      j--;
+    } else if (j == 1) {
+      i--;
+    } else if (options[1] >= options[0] && options[1] >= options[2]) {
+      i--; j--;
+    } else if (options[0] >= options[2]) {
+      i--;
+    } else {
+      j--;
+    }
+    cells.push([i, j])
+  }
+  return cells;
 }
