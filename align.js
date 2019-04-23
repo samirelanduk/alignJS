@@ -11,10 +11,20 @@ window.onload = function() {
       // We're good to go, make the results section visible
       activateResults();
 
-      // Add a dot matrix to the page
-      createDotMatrix(sequences);
+      // Display dot matrix
+      let matrix = new Matrix(sequences[0], sequences[1]);
+      matrix.fillDotMatrix();
+      document.getElementsByClassName("dot-matrix")[0].appendChild(matrix.toHtml());
 
-      createGlobalAlignmentMatrix(sequences);
+      // Display global alignment matrix
+      matrix = new Matrix(sequences[0], sequences[1]);
+      matrix.fillNeedlemanWunsch();
+      let htmlMatrix = matrix.toHtml();
+      document.getElementsByClassName("global-align")[0].appendChild(htmlMatrix);
+
+      // Get global alignment
+      let alignment = matrix.getAlignment();
+      addAlignmentToHtml(alignment, htmlMatrix);
     }
   }
 }
@@ -98,135 +108,146 @@ function activateResults() {
 }
 
 
-function createSequenceMatrix(sequences, pad=false) {
+function Matrix(sequence1, sequence2) {
   /**
-   * Takes two sequences and creates a JS matrix, where the first row is
-   * sequence 1, the first column is sequence 2, and the body is all zeroes.
+   * A pairwise grid comparing one sequence with another.
    */
 
-  let matrix = [];
-  matrix.push([""]);
-  for (var char of sequences[0]) {
-    matrix[0].push(char);
+  this.rows = [];
+  this.rows.push([""]);
+  for (var char of sequence1) {
+    this.rows[0].push(char);
   }
-  for (var char of sequences[1]) {
-    matrix.push([char])
-    for (var _ of sequences[0]) {
-      matrix[matrix.length - 1].push(0);
+  for (var char of sequence2) {
+    this.rows.push([char])
+    for (var _ of sequence1) {
+      this.rows[this.rows.length - 1].push(0);
     }
   }
-  if (pad) {
-    for (var i = 0; i < matrix.length; i++) {
-      matrix[i].splice(1, 0, i == 0 ? "" : 0);
+
+
+  this.pad = function() {
+    /**
+     * Creates an extra row and column near the top and left edges.
+     */
+
+    for (var i = 0; i < this.rows.length; i++) {
+      this.rows[i].splice(1, 0, i == 0 ? "" : 0);
     }
-    matrix.splice(1, 0, ["", 0]);
-    for (var char of sequences[0]) {
-      matrix[1].push(0);
+    this.rows.splice(1, 0, ["", 0]);
+    for (var char of sequence1) {
+      this.rows[1].push(0);
     }
   }
-  return matrix;
-}
 
 
-function createHtmlMatrix(matrix) {
-  /**
-   * Takes a JS matrix, and creates a HTML table from it. The cells will be
-   * empty if the contents are a Boolean value, but will have the match class
-   * attached if true.
-   */
+  this.toHtml = function() {
+    /**
+     * Creates a HTML table from the matrix, color coded.
+     */
 
-  let table = document.createElement("TABLE");
-  for (var row of matrix) {
-    let tableRow = table.insertRow();
-    for (var cell of row) {
-      let tableCell = tableRow.insertCell();
-      if (typeof cell === "boolean") {
-        if (cell) {
-          tableCell.classList.add("match");
-        }
-      } else {
-        tableCell.innerHTML = cell;
-        if (Number.isInteger(cell)) {
-          let opacity = (parseInt(255 / 30) * Math.abs(cell)).toString(16);
-          let color = cell > 0 ? "#44bd32" : "#e84118";
-          tableCell.style.backgroundColor = color + opacity;
+    let table = document.createElement("TABLE");
+    for (var row of this.rows) {
+      let tableRow = table.insertRow();
+      for (var cell of row) {
+        let tableCell = tableRow.insertCell();
+        if (typeof cell === "boolean") {
+          if (cell) {
+            tableCell.classList.add("match");
+          }
+        } else {
+          tableCell.innerHTML = cell;
+          if (Number.isInteger(cell)) {
+            let opacity = (parseInt(255 / 30) * Math.abs(cell)).toString(16);
+            let color = cell > 0 ? "#44bd32" : "#e84118";
+            tableCell.style.backgroundColor = color + opacity;
+          }
         }
       }
     }
+    return table;
   }
-  return table;
+
+
+  this.fillDotMatrix = function() {
+    /**
+     * Fills the matrix with true and false markers, denoting matches.
+     */
+    for (var i = 1; i < this.rows.length; i++) {
+      for (var j = 1; j < this.rows[0].length; j++) {
+        this.rows[i][j] = this.rows[0][j] == this.rows[i][0];
+      }
+    }
+  }
+
+
+  this.fillNeedlemanWunsch = function() {
+    /**
+     * Fills the matrix with Needleman Wunsch scores, after padding out.
+     */
+
+    this.pad();
+    for (var s = 1; s < this.rows[0].length; s++) {
+      this.rows[1][s] = 1 - s;
+    }
+    for (var s = 1; s < this.rows.length; s++) {
+      this.rows[s][1] = 1 - s;
+    }
+  
+    const INDEL = -1
+    const MISMATCH = -1
+    const MATCH = 1
+  
+    for (var i=2; i < this.rows.length; i++) {
+      for (var j=2; j < this.rows[0].length; j++) {
+        let scores = [];
+        let left = this.rows[i][j - 1];
+        let diagonal = this.rows[i - 1][j - 1];
+        let top = this.rows[i - 1][j];
+        scores.push(diagonal + (this.rows[i][0] == this.rows[0][j] ? MATCH : MISMATCH));
+        scores.push(top + MISMATCH);
+        scores.push(left + MISMATCH);
+        this.rows[i][j] = Math.max.apply(0, scores);
+      }
+    }
+  }
+
+
+  this.getAlignment = function() {
+    /**
+     * Traverses the matrix filled with scores, and returns an alignment list representing
+     * the optimal path.
+     */
+
+    let i = this.rows.length - 1;
+    let j = this.rows[0].length - 1;
+    let cells = [[i, j]];
+    while (i > 1 || j > 1) {
+      let options = [this.rows[i - 1][j], this.rows[i - 1][j - 1], this.rows[i][j - 1]];
+      if (i == 1) {
+        j--;
+      } else if (j == 1) {
+        i--;
+      } else if (options[1] >= options[0] && options[1] >= options[2]) {
+        i--; j--;
+      } else if (options[0] >= options[2]) {
+        i--;
+      } else {
+        j--;
+      }
+      cells.push([i, j])
+    }
+    return cells;
+  }
 }
 
 
-
-function createDotMatrix(sequences) {
+function addAlignmentToHtml(alignment, matrix) {
   /**
-   * Adds a HTML dot matrix to the page, from two sequences.
+   * Takes an alignment list, and adds it to a HTML table.
    */
 
-  let matrix = createSequenceMatrix(sequences);
-  for (var i = 1; i < matrix.length; i++) {
-    for (var j = 1; j < matrix[0].length; j++) {
-      matrix[i][j] = matrix[0][j] == matrix[i][0];
-    }
-  }
-  matrix = createHtmlMatrix(matrix);
-  document.getElementsByClassName("dot-plot")[0].appendChild(matrix);
-}
-
-
-function createGlobalAlignmentMatrix(sequences) {
-  let matrix = createSequenceMatrix(sequences, pad=true);
-  for (var s = 0; s < sequences[0].length; s++) {
-    matrix[1][s + 2] = -1 - s;
-  }
-  for (var s = 0; s < sequences[1].length; s++) {
-    matrix[s + 2][1] = -1 - s;
-  }
-
-  const INDEL = -1
-  const MISMATCH = -1
-  const MATCH = 1
-
-  for (var i=2; i < matrix.length; i++) {
-    for (var j=2; j < matrix[0].length; j++) {
-      let scores = [];
-      let left = matrix[i][j - 1];
-      let diagonal = matrix[i - 1][j - 1];
-      let top = matrix[i - 1][j];
-      scores.push(diagonal + (matrix[i][0] == matrix[0][j] ? MATCH : MISMATCH));
-      scores.push(top + MISMATCH);
-      scores.push(left + MISMATCH);
-      matrix[i][j] = Math.max.apply(0, scores);
-    }
-  }
-  let alignment = getGlobalAlignment(matrix);
-  matrix = createHtmlMatrix(matrix);
   for (var cell of alignment) {
     matrix.getElementsByTagName("tr")[cell[0]].getElementsByTagName("td")[cell[1]].style.border="1px solid black"
   }
-  document.getElementsByClassName("global-align")[0].appendChild(matrix);
-}
-
-function getGlobalAlignment(matrix) {
-  let i = matrix.length - 1;
-  let j = matrix[0].length - 1;
-  let cells = [[i, j]];
-  while (i > 1 || j > 1) {
-    let options = [matrix[i - 1][j], matrix[i - 1][j - 1], matrix[i][j - 1]];
-    console.log(options)
-    if (i == 1) {
-      j--;
-    } else if (j == 1) {
-      i--;
-    } else if (options[1] >= options[0] && options[1] >= options[2]) {
-      i--; j--;
-    } else if (options[0] >= options[2]) {
-      i--;
-    } else {
-      j--;
-    }
-    cells.push([i, j])
-  }
-  return cells;
 }
