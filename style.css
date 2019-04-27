@@ -134,3 +134,12 @@ td.match {
   background-color: hsl(210, 98%, 98%);
   line-height: 4;
 }
+
+.global-align-sequences {
+  font-family: monospace;
+  white-space: pre;
+  line-height: 1;
+  margin: auto;
+  margin-bottom: 20px;
+  width: fit-content;
+}

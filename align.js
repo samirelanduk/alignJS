@@ -25,6 +25,8 @@ window.onload = function() {
       // Get global alignment
       let alignment = matrix.getAlignment();
       addAlignmentToHtml(alignment, htmlMatrix);
+      let alignmentString = matrix.alignmentString(alignment);
+      document.getElementsByClassName("global-align-sequences")[0].innerHTML = alignmentString
     }
   }
 }
@@ -238,6 +240,29 @@ function Matrix(sequence1, sequence2) {
       cells.push([i, j])
     }
     return cells;
+  }
+
+
+  this.alignmentString = function(alignment) {
+    /**
+     * Creates an alignment string from the matrix and a supplied alignment list.
+     */
+
+    let string1 = "";
+    let string2 = "";
+    for (var c = 0; c < alignment.length; c++) {
+      if (c < alignment.length - 1 && alignment[c][1] == alignment[c + 1][1]) {
+        string1 += "-";
+      } else {
+        string1 += this.rows[0][alignment[c][1]];
+      }
+      if (c < alignment.length - 1 && alignment[c][0] == alignment[c + 1][0]) {
+        string2 += "-";
+      } else {
+        string2 += this.rows[alignment[c][0]][0];
+      }
+    }
+    return string1.split("").reverse().join("") + "\n" + string2.split("").reverse().join("");
   }
 }
 
