@@ -249,6 +249,7 @@ function Matrix(sequence1, sequence2) {
      */
 
     let string1 = "";
+    let middle = "";
     let string2 = "";
     for (var c = 0; c < alignment.length; c++) {
       if (c < alignment.length - 1 && alignment[c][1] == alignment[c + 1][1]) {
@@ -261,8 +262,13 @@ function Matrix(sequence1, sequence2) {
       } else {
         string2 += this.rows[alignment[c][0]][0];
       }
+      if (string1[string1.length - 1] == string2[string2.length - 1]) {
+        middle += "|";
+      } else {
+        middle += " ";
+      }
     }
-    return string1.split("").reverse().join("") + "\n" + string2.split("").reverse().join("");
+    return reversed(string1) + "\n" + reversed(middle).slice(1) + "\n" + reversed(string2);
   }
 }
 
@@ -275,4 +281,13 @@ function addAlignmentToHtml(alignment, matrix) {
   for (var cell of alignment) {
     matrix.getElementsByTagName("tr")[cell[0]].getElementsByTagName("td")[cell[1]].style.border="1px solid black"
   }
+}
+
+
+function reversed(string) {
+  /**
+   * Returns a reversed copy of a string.
+   */
+
+  return string.split("").reverse().join("")
 }
