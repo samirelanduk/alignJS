@@ -149,6 +149,10 @@ td.match {
   cursor: grab;
 }
 
+.in-alignment-temporary {
+  border: 1px solid red;
+}
+
 .in-alignment-fade {
   border: 1px solid #777;
 }

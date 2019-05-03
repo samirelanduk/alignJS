@@ -170,6 +170,7 @@ function Matrix(sequence1, sequence2) {
         }
       }
     }
+    this.table = table;
     return table;
   }
 
@@ -218,7 +219,7 @@ function Matrix(sequence1, sequence2) {
   }
 
 
-  this.getAlignment = function() {
+  this.getAlignment = function(instruction) {
     /**
      * Traverses the matrix filled with scores, and returns an alignment list representing
      * the optimal path.
@@ -228,18 +229,24 @@ function Matrix(sequence1, sequence2) {
     let j = this.rows[0].length - 1;
     let cells = [[i, j]];
     while (i > 1 || j > 1) {
-      let options = [this.rows[i - 1][j], this.rows[i - 1][j - 1], this.rows[i][j - 1]];
-      if (i == 1) {
-        j--;
-      } else if (j == 1) {
-        i--;
-      } else if (options[1] >= options[0] && options[1] >= options[2]) {
-        i--; j--;
-      } else if (options[0] >= options[2]) {
-        i--;
+      if (instruction && instruction[0][0] == i && instruction[0][1] == j) {
+        i += (instruction[1][0] - i);
+        j += (instruction[1][1] - j);
       } else {
-        j--;
+        let options = [this.rows[i - 1][j], this.rows[i - 1][j - 1], this.rows[i][j - 1]];
+        if (i == 1) {
+          j--;
+        } else if (j == 1) {
+          i--;
+        } else if (options[1] >= options[0] && options[1] >= options[2]) {
+          i--; j--;
+        } else if (options[0] >= options[2]) {
+          i--;
+        } else {
+          j--;
+        }
       }
+      
       cells.push([i, j])
     }
     return cells;
@@ -276,14 +283,14 @@ function Matrix(sequence1, sequence2) {
 }
 
 
-function addAlignmentToHtml(alignment, matrix) {
+function addAlignmentToHtml(alignment, matrix, temporary=false) {
   /**
    * Takes an alignment list, and adds it to a HTML table.
    */
 
   for (var cell of alignment) {
     let td = matrix.getElementsByTagName("tr")[cell[0]].getElementsByTagName("td")[cell[1]];
-    td.classList.add("in-alignment");
+    td.classList.add("in-alignment" + (temporary ? "-temporary" : ""));
     td.setAttribute("draggable", "true");
   }
 }
@@ -297,6 +304,15 @@ function reversed(string) {
   return string.split("").reverse().join("")
 }
 
+
+function getTdLocation(td) {
+  let row = td.parentNode;
+  return [
+    [...row.parentNode.children].indexOf(row),
+    [...row.children].indexOf(td)
+  ]
+}
+
 document.addEventListener("dragstart", function(event) {
   
   // Fade out main alignment
@@ -306,24 +322,20 @@ document.addEventListener("dragstart", function(event) {
 
   // Get possible cells to move to
   dragged = event.target;
-  let row = dragged.parentNode;
-  let location = [
-    [...row.parentNode.children].indexOf(row),
-    [...row.children].indexOf(dragged)
-  ]
-  let previous = null;
+  let location = getTdLocation(dragged);
+  globalMatrix.previous = null;
   for (var i = 0; i < globalMatrix.alignment.length; i++) {
     if ((globalMatrix.alignment[i][0] == location[0]) && (globalMatrix.alignment[i][1] == location[1])) {
-      previous = globalMatrix.alignment[i - 1];
+      globalMatrix.previous = globalMatrix.alignment[i - 1];
       break;
     }
   }
   let nexts = [];
-  if (previous) {
+  if (globalMatrix.previous) {
     nexts = [
-      [previous[0] - 1, previous[1]],
-      [previous[0] - 1, previous[1] - 1],
-      [previous[0], previous[1] - 1]
+      [globalMatrix.previous[0] - 1, globalMatrix.previous[1]],
+      [globalMatrix.previous[0] - 1, globalMatrix.previous[1] - 1],
+      [globalMatrix.previous[0], globalMatrix.previous[1] - 1]
     ]
   }
   for (var cell of nexts) {
@@ -335,6 +347,12 @@ document.addEventListener("dragstart", function(event) {
 }, false);
 
 document.addEventListener("dragend", function(event) {
+  // Get rid of current alignment
+  let temps = [...document.getElementsByClassName("in-alignment-temporary")];
+  for (var p = 0; p < temps.length; p++) {
+    temps[p].classList.remove("in-alignment-temporary");
+  };
+
   for (var cell of document.getElementsByClassName("in-alignment")) {
     cell.classList.remove("in-alignment-fade");
   }
@@ -342,11 +360,53 @@ document.addEventListener("dragend", function(event) {
   for (var p = 0; p < possibles.length; p++) {
     possibles[p].classList.remove("possible");
   };
+  document.getElementsByClassName("global-align-sequences")[0].innerHTML = globalMatrix.alignmentString(globalMatrix.alignment);
 }, false);
 
+
 document.addEventListener("dragenter", function(event) {
+  // Get rid of current alignment
+  let temps = [...document.getElementsByClassName("in-alignment-temporary")];
+  for (var p = 0; p < temps.length; p++) {
+    temps[p].classList.remove("in-alignment-temporary");
+  };
+
   // Is the entered thing a possible next cell?
   if (event.target.classList.contains("possible")) {
     // Calculate new alignment
+    let alignment = globalMatrix.getAlignment([globalMatrix.previous, getTdLocation(event.target)]);
+    addAlignmentToHtml(alignment, globalMatrix.table, temporary=true);
+    document.getElementsByClassName("global-align-sequences")[0].innerHTML = globalMatrix.alignmentString(alignment);
+    
+    let possibles = [...document.getElementsByClassName("possible")];
+    for (var p = 0; p < possibles.length; p++) {
+      possibles[p].classList.remove("possible");
+    };
+
+    // Get possible cells to move to
+    dragged = event.target;
+    let location = getTdLocation(dragged);
+    console.log(location);
+    globalMatrix.previous = null;
+    for (var i = 0; i < alignment.length; i++) {
+      if ((alignment[i][0] == location[0]) && (alignment[i][1] == location[1])) {
+        globalMatrix.previous = alignment[i - 1];
+        break;
+      }
+    }
+    console.log(globalMatrix.previous);
+    let nexts = [];
+    if (globalMatrix.previous) {
+      nexts = [
+        [location[0] - 1, location[1]],
+        [location[0] - 1, location[1] - 1],
+        [location[0], location[1] - 1]
+      ]
+    }
+    for (var cell of nexts) {
+      if ((cell[0] != location[0]) || (cell[1] != location[1]) && cell[0] != 0 && cell[1] != 0) {
+        dragged.parentNode.parentNode.children[cell[0]].children[cell[1]].classList.add("possible");
+      }
+    }
   }
 }, false);
