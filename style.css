@@ -143,3 +143,16 @@ td.match {
   margin-bottom: 20px;
   width: fit-content;
 }
+
+.in-alignment {
+  border: 1px solid black;
+  cursor: grab;
+}
+
+.in-alignment-fade {
+  border: 1px solid #777;
+}
+
+.possible {
+  background-color: green !important;
+}

@@ -1,3 +1,5 @@
+var globalMatrix;
+
 window.onload = function() {
   // Are there GET parameters?
   let params = parseGetParameters();
@@ -17,16 +19,17 @@ window.onload = function() {
       document.getElementsByClassName("dot-matrix")[0].appendChild(matrix.toHtml());
 
       // Display global alignment matrix
-      matrix = new Matrix(sequences[0], sequences[1]);
-      matrix.fillNeedlemanWunsch();
-      let htmlMatrix = matrix.toHtml();
+      globalMatrix = new Matrix(sequences[0], sequences[1]);
+      globalMatrix.fillNeedlemanWunsch();
+      let htmlMatrix = globalMatrix.toHtml();
       document.getElementsByClassName("global-align")[0].appendChild(htmlMatrix);
 
       // Get global alignment
-      let alignment = matrix.getAlignment();
+      let alignment = globalMatrix.getAlignment();
+      globalMatrix.alignment = alignment;
       addAlignmentToHtml(alignment, htmlMatrix);
-      let alignmentString = matrix.alignmentString(alignment);
-      document.getElementsByClassName("global-align-sequences")[0].innerHTML = alignmentString
+      let alignmentString = globalMatrix.alignmentString(alignment);
+      document.getElementsByClassName("global-align-sequences")[0].innerHTML = alignmentString;
     }
   }
 }
@@ -279,7 +282,9 @@ function addAlignmentToHtml(alignment, matrix) {
    */
 
   for (var cell of alignment) {
-    matrix.getElementsByTagName("tr")[cell[0]].getElementsByTagName("td")[cell[1]].style.border="1px solid black"
+    let td = matrix.getElementsByTagName("tr")[cell[0]].getElementsByTagName("td")[cell[1]];
+    td.classList.add("in-alignment");
+    td.setAttribute("draggable", "true");
   }
 }
 
@@ -291,3 +296,57 @@ function reversed(string) {
 
   return string.split("").reverse().join("")
 }
+
+document.addEventListener("dragstart", function(event) {
+  
+  // Fade out main alignment
+  for (var cell of document.getElementsByClassName("in-alignment")) {
+    cell.classList.add("in-alignment-fade");
+  }
+
+  // Get possible cells to move to
+  dragged = event.target;
+  let row = dragged.parentNode;
+  let location = [
+    [...row.parentNode.children].indexOf(row),
+    [...row.children].indexOf(dragged)
+  ]
+  let previous = null;
+  for (var i = 0; i < globalMatrix.alignment.length; i++) {
+    if ((globalMatrix.alignment[i][0] == location[0]) && (globalMatrix.alignment[i][1] == location[1])) {
+      previous = globalMatrix.alignment[i - 1];
+      break;
+    }
+  }
+  let nexts = [];
+  if (previous) {
+    nexts = [
+      [previous[0] - 1, previous[1]],
+      [previous[0] - 1, previous[1] - 1],
+      [previous[0], previous[1] - 1]
+    ]
+  }
+  for (var cell of nexts) {
+    if ((cell[0] != location[0]) || (cell[1] != location[1])) {
+      dragged.parentNode.parentNode.children[cell[0]].children[cell[1]].classList.add("possible");
+    }
+  }
+  
+}, false);
+
+document.addEventListener("dragend", function(event) {
+  for (var cell of document.getElementsByClassName("in-alignment")) {
+    cell.classList.remove("in-alignment-fade");
+  }
+  let possibles = [...document.getElementsByClassName("possible")];
+  for (var p = 0; p < possibles.length; p++) {
+    possibles[p].classList.remove("possible");
+  };
+}, false);
+
+document.addEventListener("dragenter", function(event) {
+  // Is the entered thing a possible next cell?
+  if (event.target.classList.contains("possible")) {
+    // Calculate new alignment
+  }
+}, false);
