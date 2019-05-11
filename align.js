@@ -1,3 +1,6 @@
+import {parseGetParameters, getSequences, validateSequences, activateResults} from './validation.js';
+import Matrix from './matrix.js';
+
 var globalMatrix;
 
 window.onload = function() {
@@ -14,294 +17,22 @@ window.onload = function() {
       activateResults();
 
       // Display dot matrix
-      let matrix = new Matrix(sequences[0], sequences[1]);
-      matrix.fillDotMatrix();
-      document.getElementsByClassName("dot-matrix")[0].appendChild(matrix.toHtml());
-
+      let dotMatrix = new Matrix(sequences[0], sequences[1]);
+      dotMatrix.fillDotMatrix();
+      dotMatrix.render("dot-matrix");
+      
       // Display global alignment matrix
       globalMatrix = new Matrix(sequences[0], sequences[1]);
       globalMatrix.fillNeedlemanWunsch();
-      let htmlMatrix = globalMatrix.toHtml();
-      document.getElementsByClassName("global-align")[0].appendChild(htmlMatrix);
+      globalMatrix.render("global-align");
 
       // Get global alignment
-      let alignment = globalMatrix.getAlignment();
-      globalMatrix.alignment = alignment;
-      addAlignmentToHtml(alignment, htmlMatrix);
-      let alignmentString = globalMatrix.alignmentString(alignment);
-      document.getElementsByClassName("global-align-sequences")[0].innerHTML = alignmentString;
+      let alignment = globalMatrix.createAlignment();
+      alignment.render("global-align-sequences");
+      globalMatrix.mainAlignment = alignment;
+      globalMatrix.activeAlignment = alignment;
     }
   }
-}
-
-
-function parseGetParameters() {
-  /**
-   * Returns an object representation of any GET parameters sent. If there are
-   * none then an empty object will be returned.
-   */
-
-  let params = window.location.search.substr(1).split("&");
-  let paramsObject = {}
-  if (params.length != 0 && params[0].length != 0) {
-    for (var param of params) {
-      let sections = param.split("=");
-      paramsObject[sections[0]] = decodeURIComponent(sections[1].replace(/\+/g, " "));
-    }
-  }
-  return paramsObject;
-}
-
-
-function getSequences(params) {
-  /** Gets the actual sequences from the parameters object, and displays them in
-   * the textareas. The sequences themselves are returned as a list.
-   */
-
-  let sequences = [];
-  for (var n of [1, 2]) {
-    let sequence = params["sequence" + n];
-    document.getElementById("id_sequence" + n).value = sequence;
-    sequence = sequence.replace(/(\r\n|\n|\r)/gm, "\n");
-    let lines = sequence.split("\n");
-    if (lines[0][0] == ">") {
-      lines.shift()
-    }
-    sequence = lines.join("");
-    sequences.push(sequence);
-  }
-  return sequences;
-}
-
-
-function validateSequences(sequences) {
-  /**
-   * Takes two sequences, and checks they are valid. If they are, they are
-   * written to the page. If not, their input is errored. If any of them are
-   * invalid, false is returned - otherwise true.
-   */
-
-  var error = false;
-  for (var i = 0; i < 2; i++) {
-    let sequence = sequences[i];
-    if (!sequence.length) {
-      document.getElementById("id_sequence" + (i + 1)).classList.add("error");
-      document.getElementsByClassName("error-message")[i].innerHTML = "Enter a sequence"
-      error = true;
-    } else if (sequence.length > 30) {
-      document.getElementById("id_sequence" + (i + 1)).classList.add("error");
-      document.getElementsByClassName("error-message")[i].innerHTML = "Sequence can't be more than 30 characters - this is " + sequence.length;
-      error = true;
-    } else {
-      document.getElementById("id_sequence" + (i + 1)).classList.remove("error");
-      document.getElementsByClassName("sequence" + (i + 1))[0].getElementsByTagName("span")[0].innerHTML = sequences[i];
-    }
-  }
-  return error;
-}
-
-
-function activateResults() {
-  /**
-   * Makes the results section visible, and scrolls to it.
-   */
-
-   let results = document.getElementsByClassName("results")[0];
-   results.style.display = "block";
-   document.getElementsByClassName("top-section")[0].style.height = "auto";
-   results.scrollIntoView();
-}
-
-
-function Matrix(sequence1, sequence2) {
-  /**
-   * A pairwise grid comparing one sequence with another.
-   */
-
-  this.rows = [];
-  this.rows.push([""]);
-  for (var char of sequence1) {
-    this.rows[0].push(char);
-  }
-  for (var char of sequence2) {
-    this.rows.push([char])
-    for (var _ of sequence1) {
-      this.rows[this.rows.length - 1].push(0);
-    }
-  }
-
-
-  this.pad = function() {
-    /**
-     * Creates an extra row and column near the top and left edges.
-     */
-
-    for (var i = 0; i < this.rows.length; i++) {
-      this.rows[i].splice(1, 0, i == 0 ? "" : 0);
-    }
-    this.rows.splice(1, 0, ["", 0]);
-    for (var char of sequence1) {
-      this.rows[1].push(0);
-    }
-  }
-
-
-  this.toHtml = function() {
-    /**
-     * Creates a HTML table from the matrix, color coded.
-     */
-
-    let table = document.createElement("TABLE");
-    for (var row of this.rows) {
-      let tableRow = table.insertRow();
-      for (var cell of row) {
-        let tableCell = tableRow.insertCell();
-        if (typeof cell === "boolean") {
-          if (cell) {
-            tableCell.classList.add("match");
-          }
-        } else {
-          tableCell.innerHTML = cell;
-          if (Number.isInteger(cell)) {
-            let opacity = (parseInt(255 / 30) * Math.abs(cell)).toString(16);
-            let color = cell > 0 ? "#44bd32" : "#e84118";
-            tableCell.style.backgroundColor = color + opacity;
-          }
-        }
-      }
-    }
-    this.table = table;
-    return table;
-  }
-
-
-  this.fillDotMatrix = function() {
-    /**
-     * Fills the matrix with true and false markers, denoting matches.
-     */
-    for (var i = 1; i < this.rows.length; i++) {
-      for (var j = 1; j < this.rows[0].length; j++) {
-        this.rows[i][j] = this.rows[0][j] == this.rows[i][0];
-      }
-    }
-  }
-
-
-  this.fillNeedlemanWunsch = function() {
-    /**
-     * Fills the matrix with Needleman Wunsch scores, after padding out.
-     */
-
-    this.pad();
-    for (var s = 1; s < this.rows[0].length; s++) {
-      this.rows[1][s] = 1 - s;
-    }
-    for (var s = 1; s < this.rows.length; s++) {
-      this.rows[s][1] = 1 - s;
-    }
-  
-    const INDEL = -1
-    const MISMATCH = -1
-    const MATCH = 1
-  
-    for (var i=2; i < this.rows.length; i++) {
-      for (var j=2; j < this.rows[0].length; j++) {
-        let scores = [];
-        let left = this.rows[i][j - 1];
-        let diagonal = this.rows[i - 1][j - 1];
-        let top = this.rows[i - 1][j];
-        scores.push(diagonal + (this.rows[i][0] == this.rows[0][j] ? MATCH : MISMATCH));
-        scores.push(top + MISMATCH);
-        scores.push(left + MISMATCH);
-        this.rows[i][j] = Math.max.apply(0, scores);
-      }
-    }
-  }
-
-
-  this.getAlignment = function(instruction) {
-    /**
-     * Traverses the matrix filled with scores, and returns an alignment list representing
-     * the optimal path.
-     */
-
-    let i = this.rows.length - 1;
-    let j = this.rows[0].length - 1;
-    let cells = [[i, j]];
-    while (i > 1 || j > 1) {
-      if (instruction && instruction[0][0] == i && instruction[0][1] == j) {
-        i += (instruction[1][0] - i);
-        j += (instruction[1][1] - j);
-      } else {
-        let options = [this.rows[i - 1][j], this.rows[i - 1][j - 1], this.rows[i][j - 1]];
-        if (i == 1) {
-          j--;
-        } else if (j == 1) {
-          i--;
-        } else if (options[1] >= options[0] && options[1] >= options[2]) {
-          i--; j--;
-        } else if (options[0] >= options[2]) {
-          i--;
-        } else {
-          j--;
-        }
-      }
-      
-      cells.push([i, j])
-    }
-    return cells;
-  }
-
-
-  this.alignmentString = function(alignment) {
-    /**
-     * Creates an alignment string from the matrix and a supplied alignment list.
-     */
-
-    let string1 = "";
-    let middle = "";
-    let string2 = "";
-    for (var c = 0; c < alignment.length; c++) {
-      if (c < alignment.length - 1 && alignment[c][1] == alignment[c + 1][1]) {
-        string1 += "-";
-      } else {
-        string1 += this.rows[0][alignment[c][1]];
-      }
-      if (c < alignment.length - 1 && alignment[c][0] == alignment[c + 1][0]) {
-        string2 += "-";
-      } else {
-        string2 += this.rows[alignment[c][0]][0];
-      }
-      if (string1[string1.length - 1] == string2[string2.length - 1]) {
-        middle += "|";
-      } else {
-        middle += " ";
-      }
-    }
-    return reversed(string1) + "\n" + reversed(middle).slice(1) + "\n" + reversed(string2);
-  }
-}
-
-
-function addAlignmentToHtml(alignment, matrix, temporary=false) {
-  /**
-   * Takes an alignment list, and adds it to a HTML table.
-   */
-
-  for (var cell of alignment) {
-    let td = matrix.getElementsByTagName("tr")[cell[0]].getElementsByTagName("td")[cell[1]];
-    td.classList.add("in-alignment" + (temporary ? "-temporary" : ""));
-    td.setAttribute("draggable", "true");
-  }
-}
-
-
-function reversed(string) {
-  /**
-   * Returns a reversed copy of a string.
-   */
-
-  return string.split("").reverse().join("")
 }
 
 
@@ -313,100 +44,53 @@ function getTdLocation(td) {
   ]
 }
 
-document.addEventListener("dragstart", function(event) {
-  
-  // Fade out main alignment
-  for (var cell of document.getElementsByClassName("in-alignment")) {
-    cell.classList.add("in-alignment-fade");
-  }
 
-  // Get possible cells to move to
-  dragged = event.target;
-  let location = getTdLocation(dragged);
-  globalMatrix.previous = null;
-  for (var i = 0; i < globalMatrix.alignment.length; i++) {
-    if ((globalMatrix.alignment[i][0] == location[0]) && (globalMatrix.alignment[i][1] == location[1])) {
-      globalMatrix.previous = globalMatrix.alignment[i - 1];
-      break;
-    }
-  }
-  let nexts = [];
-  if (globalMatrix.previous) {
-    nexts = [
-      [globalMatrix.previous[0] - 1, globalMatrix.previous[1]],
-      [globalMatrix.previous[0] - 1, globalMatrix.previous[1] - 1],
-      [globalMatrix.previous[0], globalMatrix.previous[1] - 1]
-    ]
-  }
-  for (var cell of nexts) {
-    if ((cell[0] != location[0]) || (cell[1] != location[1])) {
-      dragged.parentNode.parentNode.children[cell[0]].children[cell[1]].classList.add("possible");
-    }
-  }
-  
+document.addEventListener("dragstart", function(event) {
+  // Fade out main alignment
+  globalMatrix.fadeAlignment();
+
+  // Highlight available cells
+  let thisCell = getTdLocation(event.target);
+  globalMatrix.mainAlignment.highlightNextCells(
+    globalMatrix.mainAlignment.previousCell(thisCell)
+  );
+
+  // Tag start cell as the origin
+  globalMatrix.originCell = getTdLocation(event.target)
 }, false);
 
-document.addEventListener("dragend", function(event) {
-  // Get rid of current alignment
-  let temps = [...document.getElementsByClassName("in-alignment-temporary")];
-  for (var p = 0; p < temps.length; p++) {
-    temps[p].classList.remove("in-alignment-temporary");
-  };
 
-  for (var cell of document.getElementsByClassName("in-alignment")) {
-    cell.classList.remove("in-alignment-fade");
-  }
-  let possibles = [...document.getElementsByClassName("possible")];
-  for (var p = 0; p < possibles.length; p++) {
-    possibles[p].classList.remove("possible");
-  };
-  document.getElementsByClassName("global-align-sequences")[0].innerHTML = globalMatrix.alignmentString(globalMatrix.alignment);
+document.addEventListener("dragend", function(event) {
+  // Get rid of current alignment and restore original
+  globalMatrix.mainAlignment.render("global-align-sequences");
+  globalMatrix.restore();
+  globalMatrix.activeAlignment = globalMatrix.mainAlignment;
 }, false);
 
 
 document.addEventListener("dragenter", function(event) {
-  // Get rid of current alignment
-  let temps = [...document.getElementsByClassName("in-alignment-temporary")];
-  for (var p = 0; p < temps.length; p++) {
-    temps[p].classList.remove("in-alignment-temporary");
-  };
-
-  // Is the entered thing a possible next cell?
+  // Is this a cell that can be moved to?
   if (event.target.classList.contains("possible")) {
-    // Calculate new alignment
-    let alignment = globalMatrix.getAlignment([globalMatrix.previous, getTdLocation(event.target)]);
-    addAlignmentToHtml(alignment, globalMatrix.table, temporary=true);
-    document.getElementsByClassName("global-align-sequences")[0].innerHTML = globalMatrix.alignmentString(alignment);
-    
-    let possibles = [...document.getElementsByClassName("possible")];
-    for (var p = 0; p < possibles.length; p++) {
-      possibles[p].classList.remove("possible");
-    };
+    // Get rid of highlighted cells
+    globalMatrix.restore();
 
-    // Get possible cells to move to
-    dragged = event.target;
-    let location = getTdLocation(dragged);
-    console.log(location);
-    globalMatrix.previous = null;
-    for (var i = 0; i < alignment.length; i++) {
-      if ((alignment[i][0] == location[0]) && (alignment[i][1] == location[1])) {
-        globalMatrix.previous = alignment[i - 1];
-        break;
-      }
-    }
-    console.log(globalMatrix.previous);
-    let nexts = [];
-    if (globalMatrix.previous) {
-      nexts = [
-        [location[0] - 1, location[1]],
-        [location[0] - 1, location[1] - 1],
-        [location[0], location[1] - 1]
-      ]
-    }
-    for (var cell of nexts) {
-      if ((cell[0] != location[0]) || (cell[1] != location[1]) && cell[0] != 0 && cell[1] != 0) {
-        dragged.parentNode.parentNode.children[cell[0]].children[cell[1]].classList.add("possible");
-      }
-    }
+    // Where are we right now?
+    let thisCell = getTdLocation(event.target);
+
+    // Where should the new alignment come from?
+    let previousCell = globalMatrix.mainAlignment.equalTo(globalMatrix.activeAlignment) ? globalMatrix.activeAlignment.previousCell(
+      globalMatrix.originCell
+    ) : thisCell;
+    let truncated = globalMatrix.activeAlignment.truncate(previousCell);
+    truncated.push(getTdLocation(event.target));
+    let newAlignment = globalMatrix.continueAlignment(truncated.cells);
+    globalMatrix.activeAlignment = newAlignment;
+    newAlignment.render("global-align-sequences", true);
+
+    // Highlight new available cells
+    newAlignment.highlightNextCells(thisCell);
+
+    // Update origin
+    globalMatrix.originCell = thisCell;
   }
 }, false);

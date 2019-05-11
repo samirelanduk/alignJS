@@ -108,7 +108,7 @@ input[type=submit] {
 
 table {
   font-family: monospace;
-  border-collapse: collapse;
+  border-collapse: 1px;
   text-align: center;
   font-size: 10px;
   color: #444;
@@ -116,6 +116,9 @@ table {
   margin: auto;
 }
 
+tr {
+  border: none;
+}
 td {
   width: 20px;
   overflow: hidden;
@@ -158,5 +161,5 @@ td.match {
 }
 
 .possible {
-  background-color: green !important;
+  background-color: #4a9687 !important;
 }
