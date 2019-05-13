@@ -78,9 +78,12 @@ document.addEventListener("dragenter", function(event) {
     let thisCell = getTdLocation(event.target);
 
     // Where should the new alignment come from?
-    let previousCell = globalMatrix.mainAlignment.equalTo(globalMatrix.activeAlignment) ? globalMatrix.activeAlignment.previousCell(
-      globalMatrix.originCell
-    ) : thisCell;
+    let previousCell = globalMatrix.originCell;
+    if (globalMatrix.mainAlignment.equalTo(globalMatrix.activeAlignment)) {
+      previousCell = globalMatrix.activeAlignment.previousCell(
+        globalMatrix.originCell
+      );
+    }
     let truncated = globalMatrix.activeAlignment.truncate(previousCell);
     truncated.push(getTdLocation(event.target));
     let newAlignment = globalMatrix.continueAlignment(truncated.cells);

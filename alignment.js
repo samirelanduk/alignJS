@@ -105,10 +105,10 @@ function Alignment(matrix, cells) {
         for (var cell of this.cells) {
             truncated.push(cell);
             if (cell[0] == stopPoint[0] && cell[1] == stopPoint[1]) {
-                break;
+                return new Alignment(this.matrix, truncated);;
             }
         }
-        return new Alignment(this.matrix, truncated);
+        throw "Stop point " + stopPoint + " not in this alignment"
     }
 
 
