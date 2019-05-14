@@ -110,7 +110,7 @@ table {
   font-family: monospace;
   border-collapse: 1px;
   text-align: center;
-  font-size: 10px;
+  font-size: 7px;
   color: #444;
   box-sizing: border-box;
   margin: auto;
@@ -120,11 +120,11 @@ tr {
   border: none;
 }
 td {
-  width: 20px;
+  width: 15px;
   overflow: hidden;
-  height: 20px;
+  height: 15px;
   box-sizing: border-box;
-  line-height: 8px;
+  line-height: 10px;
 }
 
 
