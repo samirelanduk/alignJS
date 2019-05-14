@@ -91,7 +91,40 @@ function Alignment(matrix, cells) {
         string1 = string1.split("").reverse().join("");
         middle = middle.split("").reverse().join("").slice(1);
         string2 = string2.split("").reverse().join("")
-        return string1 + "\n" + middle + "\n" + string2;
+        let string =  string1 + "\n" + middle + "\n" + string2;
+        return string;
+    }
+
+
+    this.score = function(string) {
+        /**
+         * Calculates the score of the alignment based on the scoring system
+         * defined in the owning matrix. It requires a sequence string.
+         */
+
+        let lines = string.split("\n");
+        let score = 0;
+        for (var c = 0; c < lines[0].length; c++) {
+            if (lines[0][c] == lines[2][c]) {
+                score += this.matrix.match;
+            } else if (lines[0][c] == "-" || lines[2][c] == "-") {
+                score += this.matrix.indel;
+            } else {
+                score += this.matrix.mismatch;
+            }
+        }
+        return score;
+    }
+
+
+    this.scoreString = function() {
+        /**
+         * Returns the same string as string(), but with a score label added in
+         * too.
+         */
+        
+        let string = this.string();
+        return string + "  Score: " + this.score(string);
     }
 
 
@@ -147,7 +180,7 @@ function Alignment(matrix, cells) {
             }
             td.setAttribute("draggable", "true");  
         }
-        document.getElementsByClassName(className)[0].innerHTML = this.string();
+        document.getElementsByClassName(className)[0].innerHTML = this.scoreString();
     }
 
     

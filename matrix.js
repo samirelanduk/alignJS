@@ -1,6 +1,6 @@
 import Alignment from './alignment.js';
 
-function Matrix(sequence1, sequence2) {
+function Matrix(sequence1, sequence2, match=1, mismatch=-1, indel=-1) {
     /**
      * A pairwise grid comparing one sequence with another.
      */
@@ -17,6 +17,9 @@ function Matrix(sequence1, sequence2) {
         }
     }
     this.mainAlignment = [];
+    this.match = match;
+    this.mismatch = mismatch;
+    this.indel = indel;
 
 
     // Matrix content methods
@@ -61,19 +64,15 @@ function Matrix(sequence1, sequence2) {
         this.rows[s][1] = 1 - s;
         }
 
-        const INDEL = -1
-        const MISMATCH = -1
-        const MATCH = 1
-
         for (var i=2; i < this.rows.length; i++) {
                 for (var j=2; j < this.rows[0].length; j++) {
                     let scores = [];
                     let left = this.rows[i][j - 1];
                     let diagonal = this.rows[i - 1][j - 1];
                     let top = this.rows[i - 1][j];
-                    scores.push(diagonal + (this.rows[i][0] == this.rows[0][j] ? MATCH : MISMATCH));
-                    scores.push(top + MISMATCH);
-                    scores.push(left + MISMATCH);
+                    scores.push(diagonal + (this.rows[i][0] == this.rows[0][j] ? this.match : this.mismatch));
+                    scores.push(top + this.mismatch);
+                    scores.push(left + this.mismatch);
                     this.rows[i][j] = Math.max.apply(0, scores);
                 }
         }
